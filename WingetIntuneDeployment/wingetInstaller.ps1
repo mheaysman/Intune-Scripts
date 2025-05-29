@@ -21,15 +21,13 @@ if ($mode -eq "install" -Or $mode -eq "uninstall"){
     Write-Host "Selected mode is valid"
 }
 else{
-    Write-Host "Invalid value '$($mode)' provided for parameter 'mode'"
     Write-Host "Value must be 'install', 'uninstall' or not provided (default install)"
-    Write-Host "Exiting..."
     Exit 87
 }
 
 Write-Host "Scope Selected: $($scope)"
 if ($mode -eq "Machine"){
-    Write-Host "Winget "
+    Write-Host "Winget must be located"
     
     Write-Host "Attempting to find Winget"
     try {
@@ -39,7 +37,6 @@ if ($mode -eq "Machine"){
     }
     catch {
         Throw "Error finding Winget folder. Make sure winget is installed on this device"
-        Write-Host "Exiting..."
         Exit 1601
     }
     Write-Host "Winget folder found: $($wingetFolder[-1].Path)"
@@ -49,23 +46,31 @@ elseif ($mode -eq "User") {
     $cmdlet = "winget"
 }
 else { 
-    Write-Host "Invalid value '$($scope)' provided for parameter 'scope'"
     Write-Host "Value must be 'User', 'Machine' or not provided (default Machine)"
-    Write-Host "Exiting..."
     Exit 87
 }
 
-Write-Host "preparing to $($mode) $($packageName)"
+Write-Host "Preparing to $($mode) $($packageName)"
 try {
     $command = "$($cmdlet) $($mode) $($packageName) --silent --accept-source-agreements --accept-package-agreements --Scope $($scope)"
     Invoke-Expression $command
 }
 catch {
     Throw "Error while attempting to $($mode) $($packageName)"
-    Write-Host "Exiting..."
     Exit 1603
 }
 
 Write-Host "$($mode) of $($packageName) complete"
-Write-Host "Exiting..."
+Write-Host "creating/updating Registry Entry"
+
+try {
+    Set-Item -Path "HKLM:\SOFTWARE\Winget\$($packageName)" -Value "$($mode)" -Force
+}
+catch {
+    Throw "Error creating/updating registry entry"
+    Exit 1
+}
+
+Write-Host "Registry Entry created."
+Write-Host "Installation completed"
 Exit 0
