@@ -94,4 +94,5 @@ catch {
 
 Write-Host "Registry Entry created"
 Write-Host "Installation completed"
+Stop-Transcript
 Exit 0
