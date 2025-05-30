@@ -1,12 +1,23 @@
-#Winget Intune Deployment
-#Script from https://github.com/mheaysman/Intune-Scripts 
-<# Example Usage:
-.\wingetInstaller.ps1 -scope User -packageName Adobe.Acrobat 
-.\wingetInstaller.ps1 -scope Machine -packageName Adobe.Acrobat -mode uninstall
+<#  Winget Intune Deployment
+    Get the latest version from from https://github.com/mheaysman/Intune-Scripts 
+
+Use the below commands to ensure 64-bit powershell is used by intune - required for the Registry update
+Install Command:
+    %windir%\sysnative\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy ByPass -File .\wingetInstaller.ps1 -scope Machine -packageName Adobe.Acrobat.Reader.64-bit -mode install
+Uninstall Command:
+    %windir%\sysnative\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy ByPass -File .\wingetInstaller.ps1 -scope Machine -packageName Adobe.Acrobat.Reader.64-bit -mode uninstall
+Detection:
+    Detect via Registry, using the below details:
+    Key path: HKEY_LOCAL_MACHINE\SOFTWARE\Winget
+    Value Name: Package name (e.g. Adobe.Acrobat.Reader.64-bit)
+    Detection Method: String Comparison
+    Operator: Equals
+    Value: install
+    Associate with 32-bit app: No
 #>
-[CmdletBindings()]
+[CmdletBinding()]
 param(
-    [string]$packageName = "Adobe.Acrobat",
+    [string]$packageName = "Adobe.Acrobat.Reader.64-bit",
     [string]$scope = "Machine",
     [string]$mode = "install"
 )
@@ -26,7 +37,7 @@ else{
 }
 
 Write-Host "Scope Selected: $($scope)"
-if ($mode -eq "Machine"){
+if ($scope -eq "Machine"){
     Write-Host "Winget must be located"
     
     Write-Host "Attempting to find Winget"
@@ -42,7 +53,7 @@ if ($mode -eq "Machine"){
     Write-Host "Winget folder found: $($wingetFolder[-1].Path)"
 
 }
-elseif ($mode -eq "User") {
+elseif ($scope -eq "User") {
     $cmdlet = "winget"
 }
 else { 
@@ -64,13 +75,14 @@ Write-Host "$($mode) of $($packageName) complete"
 Write-Host "creating/updating Registry Entry"
 
 try {
-    Set-Item -Path "HKLM:\SOFTWARE\Winget\$($packageName)" -Value "$($mode)" -Force
+    New-Item -Path "HKLM:\SOFTWARE\Winget" -Force
+    Set-ItemProperty -Path "HKLM:\SOFTWARE\Winget" -Name "$($packageName)" -Value "$($mode)" -Force
 }
 catch {
     Throw "Error creating/updating registry entry"
     Exit 1
 }
 
-Write-Host "Registry Entry created."
+Write-Host "Registry Entry created"
 Write-Host "Installation completed"
 Exit 0
