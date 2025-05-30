@@ -42,8 +42,8 @@ if ($scope -eq "Machine"){
     
     Write-Host "Attempting to find Winget"
     try {
-        $wingetFolder = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe"
-        Set-Location $wingetFolder[-1].Path
+        $wingetFolder = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe" -ErrorAction Stop
+        Set-Location $wingetFolder[-1].Path -ErrorAction Stop
         $cmdlet = ".\winget.exe"
     }
     catch {
@@ -64,19 +64,28 @@ else {
 Write-Host "Preparing to $($mode) $($packageName)"
 try {
     $command = "$($cmdlet) $($mode) $($packageName) --silent --accept-source-agreements --accept-package-agreements --Scope $($scope)"
-    Invoke-Expression $command
+    Invoke-Expression -ErrorAction Stop $command
 }
 catch {
     Throw "Error while attempting to $($mode) $($packageName)"
     Exit 1603
 }
-
 Write-Host "$($mode) of $($packageName) complete"
-Write-Host "creating/updating Registry Entry"
 
+Write-Host "Checking if Registry object exists"
 try {
+    Get-Item -Path "HKLM:\SOFTWARE\Winget" -ErrorAction Stop
+    Write-Host "Found registry object: HKLM:\SOFTWARE\Winget"
+}
+catch {
+    Write-Host "Did not find registry object: HKLM:\SOFTWARE\Winget"
     New-Item -Path "HKLM:\SOFTWARE\Winget" -Force
-    Set-ItemProperty -Path "HKLM:\SOFTWARE\Winget" -Name "$($packageName)" -Value "$($mode)" -Force
+    Write-Host "Created new registry object: HKLM:\SOFTWARE\Winget"
+}
+
+Write-Host "creating/updating Registry Entry"
+try {
+    Set-ItemProperty -Path "HKLM:\SOFTWARE\Winget" -Name "$($packageName)" -Value "$($mode)" -Force  -ErrorAction Stop
 }
 catch {
     Throw "Error creating/updating registry entry"
