@@ -23,18 +23,21 @@ param(
 )
 $logsfolder = "C:\ProgramData\Microsoft\IntuneManagementExtension\Logs"
 $dateTime = Get-Date -Format "yyyyMMdd-HHmmss"
+$additionalArgs = "--silent --accept-source-agreements"
 
 Start-Transcript -Path "$($logsfolder)\Winget_$($packageName)_$($mode)_$($dateTime).log" -Append
 Write-Host "Checking provided parameters are valid"
 
 Write-Host "Mode Selected: $($mode)"
-if ($mode -eq "install" -Or $mode -eq "uninstall"){
-    Write-Host "Selected mode is valid"
+if ($mode -eq "install"){
+    $additionalArgs += " --accept-package-agreements"
+    Write-Host "Accepting package agreements"
 }
-else{
+elseif ($mode -ne "uninstall"){
     Write-Host "Value must be 'install', 'uninstall' or not provided (default install)"
     Exit 87
 }
+Write-Host "Selected mode is valid"
 
 Write-Host "Scope Selected: $($scope)"
 if ($scope -eq "Machine"){
@@ -63,7 +66,7 @@ else {
 
 Write-Host "Preparing to $($mode) $($packageName)"
 try {
-    $command = "$($cmdlet) $($mode) $($packageName) --silent --accept-source-agreements --accept-package-agreements --Scope $($scope)"
+    $command = "$($cmdlet) $($mode) $($packageName) $($additionalArgs) --Scope $($scope)"
     Invoke-Expression -ErrorAction Stop $command
 }
 catch {
