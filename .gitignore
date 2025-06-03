@@ -1,0 +1,5 @@
+#Ignore the Intunewin package Utility
+IntuneWinAppUtil.exe
+
+#ignore all .intunewin files
+*.intunewin
