@@ -1,19 +1,20 @@
 <#  Winget Intune Deployment
 Get the latest version from https://github.com/mheaysman/Intune-Scripts 
 
-Requires Windows 11 23H2 or greater, unless winget has been installed.
+Requires Windows 11 23H2 or later, unless winget has been installed.
 
 Install Command
-%windir%\sysnative\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy ByPass -File .\wingetInstaller.ps1 -scope Machine -packageName Adobe.Acrobat.Reader.64-bit -mode install
-%windir%\sysnative\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy ByPass -File .\wingetInstaller.ps1 -packageName Adobe.Acrobat.Reader.64-bit
+%windir%\sysnative\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy ByPass -File .\wingetInstaller.ps1 -scope Machine -packageName Publisher.Application -mode install
+%windir%\sysnative\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy ByPass -File .\wingetInstaller.ps1 -packageName Publisher.Application
 
 Uninstall Command
-%windir%\sysnative\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy ByPass -File .\wingetInstaller.ps1 -scope Machine -packageName Adobe.Acrobat.Reader.64-bit -mode uninstall
+%windir%\sysnative\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy ByPass -File .\wingetInstaller.ps1 -scope Machine -packageName Publisher.Application -mode uninstall
+%windir%\sysnative\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy ByPass -File .\wingetInstaller.ps1 -packageName Publisher.Application -mode uninstall
 
 Detection:
 Detect via Registry, using the below details:
  - Key path: HKEY_LOCAL_MACHINE\SOFTWARE\Winget
- - Value Name: Package name (e.g. Adobe.Acrobat.Reader.64-bit)
+ - Value Name: PackageName (e.g. Adobe.Acrobat.Reader.64-bit)
  - Detection Method: String Comparison
  - Operator: Equals
  - Value: install
@@ -22,7 +23,7 @@ Detect via Registry, using the below details:
 [CmdletBinding()]
 param(
     #default package to install
-    [string]$packageName = "Adobe.Acrobat.Reader.64-bit",
+    [string]$packageName = "Microsoft.VCRedist.2015+.x86",
     #default scope for installation
     [string]$scope = "Machine",
     #default mode (install/uninstall)
@@ -113,15 +114,76 @@ catch {
     New-Item -Path $registryPath -Force
     Write-Host "Created new registry object: $($registryPath)"
 }
-#Create/update registry entry
+#Create/Delete registry entry
 Write-Host "creating/updating Registry Entry"
 try {
-    Set-ItemProperty -Path $registryPath -Name "$($packageName)" -Value "$($mode)" -Force  -ErrorAction Stop
+    if ($mode = "install") {
+        Set-ItemProperty -Path $registryPath -Name "$($packageName)" -Value "$($additionalArgs) --Scope $($scope)" -Force  -ErrorAction Stop
+    }
+    else {
+        Remove-ItemProperty -Path $registryPath -Name "$($packageName)" -Force  -ErrorAction Stop
+    }
 }
 catch {
     Throw "Error creating/updating registry entry"
     Exit 1
 }
+
+#
+#
+#
+#
+#
+##Create a scheduled task to update Winget packages
+#Write-Host "Creating scheduled task to update Winget packages"
+#$taskName = "WingetUpdateTask"
+#$taskAction = New-ScheduledTaskAction -Execute "Powershell.exe" -Argument "winget update --all --silent --accept-source-agreements"
+#$taskTrigger = New-ScheduledTaskTrigger -AtStartup
+#$taskSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+#$taskPrincipal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+#try {
+#    Register-ScheduledTask -TaskName $taskName -Action $taskAction -Trigger $taskTrigger -Settings $taskSettings -Principal $taskPrincipal -Force
+#    Write-Host "Scheduled task created successfully"
+#}
+#catch {
+#    Write-Host "Failed to create scheduled task: $_"
+#    Exit 1
+#}
+#
+#
+#
+#Write-Host "Creating scheduled task to create file on boot"
+#$taskName = "TEST"
+#$taskAction = New-ScheduledTaskAction -Execute "Powershell" -Argument '-command &{get-process >> c:\test.txt}'
+#$taskTrigger = New-ScheduledTaskTrigger -Daily -At 1pm
+#$taskSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+#$taskPrincipal = New-ScheduledTaskPrincipal -UserID "NT Authority\SYSTEM" -RunLevel Highest
+#try {
+#    Register-ScheduledTask -TaskName $taskName -Action $taskAction -Trigger $taskTrigger -Settings $taskSettings -Principal $taskPrincipal -Force
+#    Write-Host "Scheduled task created successfully"
+#}
+#catch {
+#    Write-Host "Failed to create scheduled task: $_"
+#    Exit 1
+#}
+#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 Write-Host "Registry Entry created"
 Write-Host "Installation completed"
