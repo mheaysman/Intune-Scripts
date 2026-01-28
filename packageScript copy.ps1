@@ -27,3 +27,11 @@ foreach ($installer in $installers) {
 }
 
 Read-Host "Packaging complete. Press Enter to exit."
+
+
+$active = "C:\Packaging\Cisco Secure Client"
+$output = "C:\Packaging"
+$installer = Resolve-Path "cisco-secure-client-win-*-umbrella-predeploy-k9.msi"
+    .\IntuneWinAppUtil.exe -c $active -s $installer -o $output -q
+$installer = Resolve-Path "cisco-secure-client-win-*-core-vpn-predeploy-k9.msi"
+    .\IntuneWinAppUtil.exe -c $active -s $installer -o $output -q
